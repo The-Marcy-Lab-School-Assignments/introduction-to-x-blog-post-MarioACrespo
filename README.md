@@ -7,9 +7,9 @@ If you have ever signed in to a website using your Google account, you have alre
 
 Google Auth is based on OAuth 2.0 and OpenID Connect. These are industry standards that allow your application to confirm a user’s identity without ever touching their password. Instead, your app uses a token issued by Google after the user gives permission.
 
-Think of it like checking in at the airport with a passport. You do not need to verify every detail yourself—TSA already did that. Google plays that verification role, so you can just focus on welcoming the user into your app.
+Think of it like using your driver’s license to prove your identity. It wasn’t created for that purpose specifically, but because you had to verify your identity to get it, it is a trusted document.
 
-This approach is used by companies like Spotify and Airbnb, and it is widely adopted because it improves security, increases user trust, and reduces development time. It is a perfect match for web and mobile apps where fast, secure login is a must.
+This approach is used by many companies like Spotify and Airbnb, and it is widely adopted because it improves security, increases user trust, and reduces development time. It is a perfect match for web and mobile apps where fast, secure login is a must.
 
 ## How Google Auth Works in a Full Stack App
 
@@ -25,7 +25,7 @@ Some key terms you’ll encounter:
 A unique identifier registered with Google that tells Google which app is making the request.
 
 **ID Token**  
-A signed token returned by Google that contains information about the user.
+A signed token returned by Google that contains the user’s information. Remember this token, it is how you access each user’s data and ensure their experience is personal
 
 **OAuth Flow**  
 The sequence of events where the user approves access and your app receives a secure token.
@@ -57,12 +57,7 @@ In comparison to what is typically covered in web dev curriculum, Google Auth st
 
 If you are building apps that require user authentication, Google Auth is one of the most developer-friendly solutions available. It is secure, scalable, and integrates well with both web and mobile apps.
 
-To learn Google Auth effectively:
-
-- Start with the official documentation  
-- Focus on the concept of identity tokens and the OAuth flow  
-- Use environment variables for client credentials  
-- Implement it first in a test project to get comfortable
+To learn Google Auth effectively, start with the official documentation. Make sure you get a solid understanding of identity tokens and how the OAuth flow works, since this will make everything else much easier. Keep your client credentials safe by using environment variables, and try implementing Google Auth first in a small test project so you can experiment without breaking anything.
 
 Here are the resources I used to learn:
 
