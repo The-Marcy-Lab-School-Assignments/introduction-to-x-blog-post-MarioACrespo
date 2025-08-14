@@ -1,69 +1,133 @@
-# Secure Login with Google Auth: A Developer’s Introduction  
+# Secure Login with Google Auth: A Developer's Introduction
 By Mario Crespo
 
 ## Why Google Auth Belongs in Every Developer's Toolkit
-Have you ever logged in using your Gmail account? That is you using Google Auth. As developers, we need to build authentication systems for our apps ensuring the user's information is safe. Google Auth simplifies that process by allowing developers to skip building traditional login forms and delegate identity verification to google itself.
+When I was planning my Capstone project I knew I wanted to use Google Calendar. To access each user's personal calendar I needed a way for users to sign in with their Google accounts. That is where Google Auth came in and it also had the added bonus of me not having to make a whole login system from scratch
 
-Google Auth is based on OAuth 2.0 and OpenID Connect. These are the standards that allow an application to confirm a user’s identity without actually needing their password. Instead the app uses a token issued by Google after the user gives the permission.
+Google Auth lets your app confirm a user's identity without ever handling their password adding another time save of not having to secure the password. Instead of storing credentials yourself your app receives a secure token from Google. Think of it like showing a passport at the airport. You never created it but it is trusted because it comes from a verified source. Whenever you go onto a site or an app notice how often you see the option to use Google to log in
 
-Think of it like using your driver’s license to prove your identity. It wasn’t created for that purpose, but because you had to verify your identity to get the license, it is a trusted document.
+## Setting Up Google Auth
 
-This approach is used by many companies like Spotify and Airbnb, and it is widely used because it improves security and increases user trust  while reducing development time. It is a perfect match for web and mobile apps where fast, secure login is a must.
+### Steps:
 
-## How Google Auth Works in a Full Stack App
+**Create a project in Google Cloud Console**
+Start by creating a project in Google Cloud Console. This gives you the information you need to use like CLIENT_ID and 
 
-To integrate Google Auth, you will configure both your frontend and backend.
+**Enable Google Identity Services**
+Turn on Google Identity Services for your project. This lets your app use Google accounts to sign in the users
 
-On the frontend, you let users click a “Sign in with Google” button. This sends the user to a Google sign in page and permissions page. Once they approve, Google redirects them back to your app with a token containing their user info.
+**Register your app's authorized redirect URIs**
+Add the redirect URIs for your app. These are the test and the deployed sites that google will need to allow you and other users to use their resources
 
-On the backend, your server receives the token and uses a Google library to verify that the token is valid and was issued by Google. Once it is verified, you can create a session or store the information in your database.
+I had a lot of trouble and needed a lot of help getting started since I wasn't used to this new and far bigger set of resources, so don't forget to ask for help and look things up
 
-Some key terms you’ll need to know:
+This .env variable is your main access to the Google Authentication
+```
+GOOGLE_CLIENT_ID=your_client_id_here
+```
 
-**Client ID**  
-A unique identifier registered with Google that tells Google which app is making the request.
+To add the Google Auth into a project, you need both the frontend and the backend packages. On the frontend, you need @react-oauth/google. On the backend, you need google-auth-library. Installing them is simple:
 
-**ID Token**  
-A signed token returned by Google that contains the user’s information. Remember this token, it is how you access each user’s data and ensure their experience is personal
+```bash
+# Frontend
+npm install @react-oauth/google
 
-**OAuth Flow**  
-The sequence of events where the user approves access and your app receives a secure token.
+# Backend
+npm install google-auth-library
+```
 
-**Redirect URI**  
-The page your user is sent back to after they sign in with Google.
+Once installed, you can begin making the frontend Google Login button and backend token verification. The frontend renders a Sign In button and sends the ID token to your backend once a user logs in. Here's a simplified example of it:
 
-**Token Verification**  
-A server side step where your backend confirms the authenticity of the token.
+```javascript
+import React from 'react';
+import { GoogleLogin } from '@react-oauth/google';
 
-Once this process is in place, your users can login without creating a new password, and you can trust that Google has already verified their identity.
+function App() {
+  // This function runs when the user successfully logs in with Google
+  const handleLoginSuccess = (response) => {
+    // Send the ID token to the backend for verification
+    fetch('http://localhost:5000/api/auth/google', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // The token contains the user's Google identity info
+      body: JSON.stringify({ token: response.credential }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        // Backend sends back verified user info
+        console.log('User authenticated:', data);
+      })
+      .catch((error) => {
+        console.error('Error during authentication:', error);
+      });
+  };
 
-## Different Paths of Authentification
+  return (
+    <div>
+      {/* Renders Google Sign-In button */}
+      <GoogleLogin onSuccess={handleLoginSuccess} onError={() => console.log('Login Failed')} />
+    </div>
+  );
+}
 
-There are several ways to handle the authentication, and each with pros and cons.
+export default App;
+```
 
-**Email and Password**  
-Building your own login system using email and password is familiar but risky. You are responsible for hashing passwords, handling resets, and storing user credentials securely.
+In this example, the GoogleLogin component renders a button. When the user signs in, the handleLoginSuccess function sends the ID token to the backend, which will verify it. While on the backend side, the ID token is verified to ensure if it's authentic before any user actually logs in. Here's a quick example of what it would look like in code:
 
-**Auth0 and Firebase Auth**  
-These services offer a social login along with email based sign in. They provide more customization and support but may include  pricing tiers and have some learning curves.
+```javascript
+const express = require('express');
+const { OAuth2Client } = require('google-auth-library');
 
-**Google Auth**  
-By focusing on Google users, this method provides a clean, fast login experience. The drawback is that users need a Google account.
+const app = express();
+const client = new OAuth2Client('YOUR_GOOGLE_CLIENT_ID'); // Unique ID for your app
 
-In comparison to what is typically covered in web dev curriculum, Google Auth stands out because it replaces traditional authentication logic with token based identity verification. It also encourages secure development practices by moving sensitive logic to trusted providers.
+app.use(express.json());
 
-## Final Thoughts and Learning Resources
+app.post('/api/auth/google', async (req, res) => {
+  const { token } = req.body; // Receive the ID token sent from the frontend
 
-If you are building apps that require user authentication, Google Auth is one of the most developer-friendly solutions available. It is secure, scalable, and integrates well with both web and mobile apps.
+  try {
+    // Verify the token with Google's library
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: 'YOUR_GOOGLE_CLIENT_ID', // Ensures token is meant for this app
+    });
 
-To learn Google Auth effectively, start with the official notes from google themselves. Make sure you get a solid understanding of the identity tokens and how the flow works, since this will make everything else much easier. Keep your client credentials safe by using environment variables, and try implementing Google Auth first in a small test project so you can experiment without breaking anything.
+    const payload = ticket.getPayload(); 
+    // Payload contains verified user info (email, name, picture, etc.)
+    res.json({ message: 'User authenticated', user: payload });
+  } catch (error) {
+    // If verification fails, return an error
+    console.error('Error verifying token:', error);
+    res.status(401).json({ error: 'Invalid token' });
+  }
+});
 
-Here are the resources I used to learn more:
+app.listen(5000, () => {
+  console.log('Server running on http://localhost:5000');
+});
+```
 
-- [Google Identity Services Web Guide](https://developers.google.com/identity/gsi/web)  
-- [Google Auth Library for Node](https://github.com/googleapis/google-auth-library-nodejs)  
-- [React OAuth Google Package](https://www.npmjs.com/package/react-oauth-google)  
-- [OAuth 2.0 Overview](https://oauth.net/2/)  
+The backend receives the token, verifies it using Google's library, and extracts the user's information. Only the verified users can proceed, which ensures secure authentication.
+
+## Final Thoughts
+In my Capstone, using Google Auth saved me from building a password and login system from scratch while also completing the reason I needed it for, accessing each user's google calendar.
+
+### Plan for Real World Scenarios
+When I first used Google Auth I ran into a big problem because I did not check when Google would update their servers and security protocols. My app would not deploy because Google stopped accepting the older code it was built on. Always research what you are working with and stay aware of any plans of change so you will not end up with an unforeseen problem.
+
+### Test in Multiple Environments Early
+Do not wait until the end of development to test Google Auth under real conditions. I made that mistake, and problems like redirect URI mismatches and HTTPS requirements hit me right before launch. If I had tested earlier, I could have caught them when fixes were quick and I had more time, instead of scrambling at the last minute and worrying if a fix would break more than fix.
+
+### Monitor API Usage and Error Logs
+Google provides dashboards to track API calls, errors, and unusual activity. Take some time to check these regularly. You might spot patterns like failed token exchanges that will help you find any hidden errors or soon to be problems you may have missed.
+
+## Learning Resources:
+- [Google Identity Services Web Guide](https://developers.google.com/identity/gsi/web)
+- [Google Auth Library for Node](https://github.com/googleapis/google-auth-library-nodejs)
+- [React OAuth Google Package](https://www.npmjs.com/package/react-oauth-google)
+- [OAuth 2.0 Overview](https://oauth.net/2/)
 - [Google OAuth Playground](https://developers.google.com/oauthplayground)
-
-Once you understand how to request, receive, and verify tokens, you can apply the same logic across other projects with ease. Learning this now will save you hours of work in future builds.
